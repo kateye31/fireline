@@ -1,5 +1,5 @@
 # SITE_ADDRESS is a hostname (Caddy gets a Let's Encrypt cert automatically) or ":80" for plain HTTP.
-# No domain? Use <droplet-ip-with-dashes>.sslip.io, e.g. 129-212-1-2.sslip.io.
+# e.g. SITE_ADDRESS=yourdomain.com, www.yourdomain.com (DNS A records must point at the VM first).
 # HTTPS matters: browsers only allow desktop notifications on secure origins.
 {$SITE_ADDRESS} {
 	encode gzip

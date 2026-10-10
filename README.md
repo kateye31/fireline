@@ -5,20 +5,20 @@
 Fireline is a flock of tree-mounted camera units that spot wildfire smoke minutes after ignition, in places
 with no grid, no internet and nobody watching. Each unit runs the smoke model on its own NVIDIA Jetson, wakes up
 only when the weather says fire is likely, and sends tiny (≤ 340 B) alert packets over a satellite link to the
-**Fireline web console**. The console runs on AMD Developer Cloud, where **Gemma** writes each incident up for the fire crew.
+**Fireline web console**. The console runs on an Azure VM, where **Gemma** writes each incident up for the fire crew.
 
 Knight Hacks IX · Oct 9–11, 2026.
 
 ## Architecture
 
 ```
- Field unit (no grid, no internet)                     AMD Developer Cloud (one MI300X droplet)
+ Field unit (no grid, no internet)                     Azure (one Linux VM, CPU only)
 ┌──────────────────────────────────────┐            ┌────────────────────────────────────────────┐
 │ DHT11 ─► ESP32 sentry ─MQTT─► Jetson  │  ≤ 340 B   │  fireline (FastAPI)                         │
 │          fire-risk tier      Pyronear │──uplink───►│   ├ simulated satellite link (size, delay)  │──WebSocket──► browsers
 │          wakes the Jetson    YOLO     │  JSON      │   ├ units / incidents / link log (SQLite)   │              (fleet map,
 │                              scoring  │            │   └ serves the React site                   │               alerts, unit
-│                                       │──snapshot─►│  gemma (vLLM, ROCm) ◄─ incident write-ups   │               detail)
+│                                       │──snapshot─►│  gemma (Ollama, CPU) ◄─ incident write-ups  │               detail)
 └──────────────────────────────────────┘ side chan. └────────────────────────────────────────────┘
 ```
 
@@ -32,9 +32,9 @@ the server is where satellite messages land, and the console is a page anyone on
 | `jetson/` | Packet builder, interest scoring, ordered uplink queue, scan loop (`scan.py`) | ML / Jetson |
 | `firmware/fireline_sentry/` | ESP32 sentry (Arduino): DHT11, fire-risk tiers, scan requests and heartbeats over MQTT, LEDs and buzzer | Hardware |
 | `tools/fake_fleet.py` | Simulated units in Ocala National Forest + hand-fired smoke events | Anyone |
-| `deploy/` | Docker Compose for the AMD droplet: app + Gemma on vLLM + Caddy HTTPS | Backend |
+| `deploy/` | Docker Compose for the Azure VM: app + Gemma on Ollama + Caddy HTTPS | Backend |
 | `docs/protocol.md` | **The JSON contract.** Read this first | Everyone |
-| `docs/SETUP.md` | **Step-by-step setup** for the laptop, AMD server, Jetson and ESP32 | Everyone |
+| `docs/SETUP.md` | **Step-by-step setup** for the laptop, Azure server, Jetson and ESP32 | Everyone |
 
 **New here? Follow [docs/SETUP.md](docs/SETUP.md).** It walks through every device in order.
 
@@ -71,24 +71,24 @@ Summaries are optional. Without `GEMMA_BASE_URL` the site uses the template summ
 server to turn Gemma on:
 
 ```bash
-GEMMA_BASE_URL=http://<droplet>:8001/v1 GEMMA_MODEL=google/gemma-3-27b-it uvicorn app.main:app
+GEMMA_BASE_URL=http://localhost:11434/v1 GEMMA_MODEL=gemma3:4b uvicorn app.main:app   # with Ollama installed locally
 ```
 
 Gemma gets the incident numbers and, when `GEMMA_VISION=1`, the smoke crop. That gives a second opinion
 on whether the crop shows smoke, cloud, fog or dust.
 
-## Deploy to AMD Developer Cloud
+## Deploy to Azure
 
-1. Create a GPU droplet (MI300X) with a ROCm image, and open ports 80 and 443.
-2. Accept the Gemma license on Hugging Face and create a read token.
-3. On the droplet:
-   ```bash
-   git clone https://github.com/kateye31/jetsonyay.git && cd jetsonyay/deploy
-   cp ../.env.example .env      # set HF_TOKEN; SITE_ADDRESS=<ip-with-dashes>.sslip.io for free HTTPS
-   docker compose up -d --build
-   docker compose logs -f gemma  # first start downloads the model
-   ```
-4. Point the Jetson at it: `FIRELINE_URL=https://<site> python jetson/scan.py`.
+One `Standard_D4s_v5` Ubuntu VM (about $0.19/h) runs the whole stack with `docker compose`.
+See [docs/SETUP.md, step 2](docs/SETUP.md#step-2-the-azure-server-30-min) for the click-by-click version.
+
+```bash
+git clone https://github.com/kateye31/jetsonyay.git && cd jetsonyay/deploy
+cp ../.env.example .env      # SITE_ADDRESS=yourdomain.com, www.yourdomain.com
+docker compose up -d --build
+```
+
+Then point the Jetson at it: `FIRELINE_URL=https://<site> python jetson/scan.py`.
 
 HTTPS matters because browsers only allow desktop notifications on secure origins.
 

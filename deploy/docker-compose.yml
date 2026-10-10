@@ -1,9 +1,9 @@
-# Full stack for one AMD Developer Cloud GPU droplet (MI300X, ROCm):
-#   caddy    -> HTTPS on 443, proxies to fireline
+# Full stack for one Azure Linux VM (no GPU needed):
+#   caddy    -> HTTPS on 443 (automatic Let's Encrypt cert), proxies to fireline
 #   fireline -> web app + API + simulated satellite link (port 8000 inside)
-#   gemma    -> vLLM serving Gemma with an OpenAI-compatible API (port 8001 inside)
+#   gemma    -> Ollama serving Gemma on CPU with an OpenAI-compatible API (port 11434 inside)
 #
-#   cd deploy && cp ../.env.example .env   # fill in HF_TOKEN and SITE_ADDRESS
+#   cd deploy && cp ../.env.example .env   # set SITE_ADDRESS
 #   docker compose up -d --build
 services:
   fireline:
@@ -11,32 +11,18 @@ services:
     restart: unless-stopped
     env_file: .env
     environment:
-      GEMMA_BASE_URL: http://gemma:8001/v1
+      GEMMA_BASE_URL: http://gemma:11434/v1
     volumes:
       - fireline-data:/data
     # No depends_on gemma on purpose: the site works (template summaries) while Gemma is still downloading.
 
   gemma:
-    # ROCm build of vLLM. Pin an exact tag from https://hub.docker.com/r/rocm/vllm/tags before the demo.
-    image: rocm/vllm:latest
+    image: ollama/ollama:0.6.8
     restart: unless-stopped
-    devices:
-      - /dev/kfd
-      - /dev/dri
-    group_add:
-      - video
-    ipc: host
-    shm_size: 16g
-    security_opt:
-      - seccomp=unconfined
-    environment:
-      HF_TOKEN: ${HF_TOKEN}   # Gemma is gated: accept the license on Hugging Face first
     volumes:
-      - hf-cache:/root/.cache/huggingface
-    command: >
-      vllm serve ${GEMMA_MODEL:-google/gemma-3-27b-it}
-      --host 0.0.0.0 --port 8001
-      --max-model-len 8192
+      - ollama-models:/root/.ollama
+    # Start the server, pull the model on first boot (about 3 GB for gemma3:4b), then keep serving.
+    entrypoint: ["/bin/sh", "-c", "ollama serve & sleep 3 && ollama pull ${GEMMA_MODEL:-gemma3:4b}; wait"]
 
   caddy:
     image: caddy:2.8.4
@@ -54,5 +40,5 @@ services:
 
 volumes:
   fireline-data:
-  hf-cache:
+  ollama-models:
   caddy-data:
