@@ -14,8 +14,7 @@ services:
       GEMMA_BASE_URL: http://gemma:8001/v1
     volumes:
       - fireline-data:/data
-    depends_on:
-      - gemma
+    # No depends_on gemma on purpose: the site works (template summaries) while Gemma is still downloading.
 
   gemma:
     # ROCm build of vLLM. Pin an exact tag from https://hub.docker.com/r/rocm/vllm/tags before the demo.
