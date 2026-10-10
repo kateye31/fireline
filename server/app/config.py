@@ -1,4 +1,4 @@
-"""All tunables come from environment variables so the same image runs locally and on AMD cloud."""
+"""All tunables come from environment variables so the same image runs locally and on Azure."""
 import os
 from pathlib import Path
 
@@ -29,9 +29,9 @@ INCIDENT_WINDOW_S = _f("INCIDENT_WINDOW_S", 600)
 SNAPSHOT_MAX_AGE_S = _f("SNAPSHOT_MAX_AGE_S", 120)
 DEMO_MODE = _b("DEMO_MODE", False)
 
-# Gemma, served by vLLM (or anything OpenAI-compatible) on the AMD GPU droplet.
-GEMMA_BASE_URL = os.getenv("GEMMA_BASE_URL", "").rstrip("/")  # e.g. http://localhost:8001/v1
-GEMMA_MODEL = os.getenv("GEMMA_MODEL", "google/gemma-3-27b-it")
+# Gemma, served by Ollama (or anything OpenAI-compatible) next to the app.
+GEMMA_BASE_URL = os.getenv("GEMMA_BASE_URL", "").rstrip("/")  # e.g. http://localhost:11434/v1
+GEMMA_MODEL = os.getenv("GEMMA_MODEL", "gemma3:4b")
 GEMMA_API_KEY = os.getenv("GEMMA_API_KEY", "EMPTY")
 GEMMA_VISION = _b("GEMMA_VISION", True)
-GEMMA_TIMEOUT_S = _f("GEMMA_TIMEOUT_S", 30)
+GEMMA_TIMEOUT_S = _f("GEMMA_TIMEOUT_S", 180)

@@ -1,4 +1,4 @@
-"""Incident write-ups from Gemma, served by vLLM's OpenAI-compatible API on the AMD GPU droplet.
+"""Incident write-ups from Gemma, served through an OpenAI-compatible API (Ollama in deploy/).
 
 Everything here is best effort: if Gemma is not configured or does not answer, the
 template summary built in ground.py stays on the incident and the demo keeps working.

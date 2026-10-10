@@ -9,12 +9,12 @@ so you know it worked before moving on.
 |---|---|---|
 | **ESP32** (in the field box) | `firmware/fireline_sentry/` | Reads temp and humidity, decides the fire-risk tier, tells the Jetson when to scan, drives the LEDs and buzzer |
 | **Jetson** (in the field box) | `jetson/` | Runs the MQTT broker the ESP32 talks to, runs the smoke model on the camera, and sends alert packets to the cloud |
-| **AMD cloud server** | `server/` + `web/` + `deploy/` | Receives packets (through the fake satellite link), stores them, runs Gemma, and hosts the website |
+| **Azure server** | `server/` + `web/` + `deploy/` | Receives packets (through the fake satellite link), stores them, runs Gemma, and hosts the website |
 | **Your laptop** | nothing to install | Opens the website in a browser. Also used to flash the ESP32 |
 | **Phone hotspot** | – | Wi-Fi for the field box, plus the internet the Jetson needs to reach the cloud |
 
 ```
-ESP32 ──MQTT (local Wi-Fi)──► Jetson ──HTTPS (internet)──► AMD server ◄── browser on the laptop
+ESP32 ──MQTT (local Wi-Fi)──► Jetson ──HTTPS (internet)──► Azure server ◄── browser on the laptop
 ```
 
 The ESP32 never talks to the internet. Only the Jetson does, and only with tiny packets.
@@ -50,66 +50,102 @@ python tools/fake_fleet.py event --unit gw-14
 
 ✅ **Check:** a few seconds later a red toast appears, the map flies to gw-14, and the Alerts tab shows the incident.
 
-## Step 2: the AMD cloud server (30–60 min, mostly waiting on downloads)
+## Step 2: the Azure server (30 min)
 
-### 2a. Get a machine
+One small Linux VM runs everything: the website, the API, and Gemma (on CPU, through Ollama).
+It costs about **$0.17–0.20 an hour**, so a whole hackathon weekend is roughly $10 of your $100.
 
-1. Sign in to **AMD Developer Cloud** with your hackathon credits.
-2. Create a **GPU droplet** (MI300X). Pick an image that comes with **ROCm and Docker**; the vLLM / ROCm quick-start images do.
-3. Add your SSH key when it asks (or use the password it gives you).
-4. Note the droplet's **public IP**, e.g. `129.212.1.2`.
+### 2a. Create the VM
 
-From your laptop:
+In https://portal.azure.com → **Virtual machines → Create → Azure virtual machine**:
+
+| Setting | Value |
+|---|---|
+| Subscription | Azure for Students |
+| Resource group | Create new: `fireline` |
+| VM name | `fireline` |
+| Region | **East US** (closest to Florida). If a size is unavailable, try East US 2 |
+| Image | **Ubuntu Server 24.04 LTS – x64** |
+| Size | **Standard_D4s_v5** (4 vCPU, 16 GB RAM). Alternatives: `D4as_v5`, or `B4ms` if those are blocked |
+| Authentication | SSH public key (let Azure generate one and **download the .pem**), username `azureuser` |
+| Inbound ports | Allow **SSH (22), HTTP (80), HTTPS (443)** |
+| Disk (Disks tab) | OS disk **64 GB**, Standard SSD |
+
+Click **Review + create → Create**. Download the key when asked.
+
+Avoid the smallest B-series sizes (B1s, B2s): Gemma will be painfully slow or will not fit in memory.
+
+### 2b. Point your domain at the VM
+
+Throughout this guide, replace `yourdomain.com` with your real domain.
+
+1. **Make the IP permanent.** In the portal, open the VM → click its **Public IP address** → **Configuration** →
+   set **Assignment: Static** → **Save**. Otherwise the IP can change when you stop and start the VM, and the domain
+   would point at nothing. Copy the IP, e.g. `20.121.5.6`.
+2. **Add DNS records** at your domain registrar (Namecheap, GoDaddy, Cloudflare, Porkbun...) → DNS settings:
+
+   | Type | Host / Name | Value |
+   |---|---|---|
+   | A | `@` | `20.121.5.6` (your VM's IP) |
+   | A | `www` | `20.121.5.6` |
+
+   Delete any existing "parking" A or CNAME records for `@` and `www` that the registrar added.
+   **Using Cloudflare?** Set both records to **DNS only** (grey cloud) so the server can get its own certificate.
+3. ✅ **Check:** after a few minutes, `nslookup yourdomain.com` on your laptop prints your VM's IP. It can take up to
+   an hour, but it is usually under 10 minutes.
+
+You don't need to buy a certificate: Caddy (part of the stack) gets a free HTTPS certificate for the domain
+automatically on first start. HTTPS matters because browsers only allow desktop notifications on secure sites.
+
+### 2c. Log in and install Docker
+
+From your laptop (in the folder where the .pem downloaded):
 
 ```bash
-ssh root@129.212.1.2
+ssh -i fireline_key.pem azureuser@20.121.5.6     # your VM's IP
 ```
 
-✅ **Check:** `docker --version` and `rocm-smi` both print something. If `docker` is missing, install it with
-`curl -fsSL https://get.docker.com | sh`.
+On Windows, if ssh complains the key is "too open", use the Bash tool or WSL, or right-click the file →
+Properties → Security and remove every user except yourself.
 
-### 2b. Get Gemma access
+On the VM:
 
-1. Make a Hugging Face account, open https://huggingface.co/google/gemma-3-27b-it and accept the license.
-2. Go to Settings → Access Tokens and create a **Read** token.
+```bash
+curl -fsSL https://get.docker.com | sudo sh
+sudo usermod -aG docker $USER && exit      # log out so the group change applies
+```
 
-### 2c. Start the stack
+SSH back in. ✅ **Check:** `docker run --rm hello-world` prints "Hello from Docker!".
 
-On the droplet:
+### 2d. Start the stack
 
 ```bash
 git clone https://github.com/kateye31/jetsonyay.git
 cd jetsonyay/deploy
 cp ../.env.example .env
-nano .env
-```
-
-In `.env`, set:
-- `HF_TOKEN=` your token
-- `SITE_ADDRESS=129-212-1-2.sslip.io`: your IP **with dashes**, plus `.sslip.io`. That gives you free HTTPS
-  with no domain. You need HTTPS because browsers block desktop notifications on plain HTTP.
-
-Save (Ctrl+O, Enter, Ctrl+X), then:
-
-```bash
+nano .env                         # set SITE_ADDRESS=yourdomain.com, www.yourdomain.com
 docker compose up -d --build
-docker compose ps                 # all three services should be "running"
-docker compose logs -f gemma      # first start downloads ~55 GB; wait for "Application startup complete"
+docker compose ps                 # fireline, gemma and caddy should all be "running"
+docker compose logs -f gemma      # first boot pulls gemma3:4b (~3 GB); Ctrl+C to stop watching
+docker compose logs caddy         # look for "certificate obtained successfully" for your domain
 ```
 
-Open the port if the droplet has a firewall: `ufw allow 80,443/tcp`.
+Save in nano with Ctrl+O, Enter, then Ctrl+X to exit.
 
 ✅ **Check:**
-- `https://129-212-1-2.sslip.io` loads the site. It works right away, even while Gemma is still downloading.
-- `https://129-212-1-2.sslip.io/api/health` shows `"gemma": {"enabled": true, "ok": true}` once Gemma is up.
-- From your laptop, `python tools/fake_fleet.py --url https://129-212-1-2.sslip.io fleet --interval 10` puts dots on the cloud map.
+- `https://yourdomain.com` loads the site. It works right away, even while Gemma is still downloading.
+- `https://yourdomain.com/api/health` shows `"gemma": {"enabled": true, "ok": true}` once the model is pulled.
+- From your laptop: `python tools/fake_fleet.py --url https://yourdomain.com fleet --interval 10` puts dots on the cloud map,
+  and `python tools/fake_fleet.py --url https://yourdomain.com event --unit gw-14` makes an alert. The Gemma text
+  replaces the template summary 15–60 s later.
 
-**If Gemma will not start:** the site still works and alert cards fall back to the template summary.
-The fast fix is a smaller model: set `GEMMA_MODEL=google/gemma-3-4b-it` in `.env`, then run `docker compose up -d gemma`.
-If the `rocm/vllm` image itself fails, check `docker compose logs gemma` and try a specific tag from
-https://hub.docker.com/r/rocm/vllm/tags in `docker-compose.yml`.
+**Gemma too slow?** Set `GEMMA_MODEL=gemma3:1b` in `.env` (text only, much faster), then run `docker compose up -d`.
+Alert cards always show the instant template summary first, so slow Gemma never delays an alert.
 
-**After changing code:** `git pull && docker compose up -d --build fireline`.
+**After changing code:** `cd ~/jetsonyay && git pull && cd deploy && docker compose up -d --build fireline`.
+
+**Save credits:** when you are done for the day, **Stop** the VM in the portal (status must say "Stopped (deallocated)").
+Start it again before the demo; with the static IP, your domain keeps working. Delete the `fireline` resource group after the hackathon.
 
 ## Step 3: the phone hotspot (5 min)
 
@@ -161,7 +197,7 @@ yolo export model=yolov8s.pt format=engine half=True      # TensorRT; takes seve
 Still inside the container (use the real cloud address and this unit's coordinates):
 
 ```bash
-FIRELINE_URL=https://129-212-1-2.sslip.io UNIT_ID=gw-03 UNIT_LAT=29.1800 UNIT_LON=-81.7800 \
+FIRELINE_URL=https://yourdomain.com UNIT_ID=gw-03 UNIT_LAT=29.1800 UNIT_LON=-81.7800 \
 UNIT_LOC="Juniper Prairie" MODEL=yolov8s.engine DEMO_MODE=1 python scan.py
 ```
 
@@ -232,5 +268,6 @@ Want to show a relocation? Type `loc 29.2200 -81.7400 Salt Springs` and the mark
 | Some Android hotspots block device-to-device traffic | Use another phone |
 | Unit shows grey on the map | No heartbeat for 120 s. Is `scan.py` running, and is the ESP32 connected? |
 | Jetson log says `uplink failed` | The Jetson has no internet, or `FIRELINE_URL` is wrong. Try `curl https://<site>/api/health` on the Jetson |
-| No desktop notification | The site must be on HTTPS (the sslip.io address) and you must click **Enable alert sound** once |
+| Site does not load / certificate error | DNS not pointing at the VM yet (`nslookup yourdomain.com`), ports 80/443 not open in the VM's Networking tab, or Cloudflare proxy (orange cloud) on. Check `docker compose logs caddy` |
+| No desktop notification | The site must be on HTTPS (`https://yourdomain.com`) and you must click **Enable alert sound** once |
 | Alert cards have no Gemma text | `/api/health` shows why; Gemma may still be downloading. The template summary is the fallback |
