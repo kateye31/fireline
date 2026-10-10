@@ -30,10 +30,13 @@ the server is where satellite messages land, and the console is a page anyone on
 | `server/` | FastAPI: `/api/uplink` behind the satellite simulator, incidents, offline detection, Gemma summaries, WebSocket, serves `web/dist` | Backend |
 | `web/` | React + Vite + Leaflet: fleet map, alert feed, unit detail, settings | App |
 | `jetson/` | Packet builder, interest scoring, ordered uplink queue, scan loop (`scan.py`) | ML / Jetson |
-| `firmware/` | ESP32 sentry (DHT11, tiers, MQTT, LEDs); not started yet | Hardware |
+| `firmware/fireline_sentry/` | ESP32 sentry (Arduino): DHT11, fire-risk tiers, scan requests and heartbeats over MQTT, LEDs and buzzer | Hardware |
 | `tools/fake_fleet.py` | Simulated units in Ocala National Forest + hand-fired smoke events | Anyone |
 | `deploy/` | Docker Compose for the AMD droplet: app + Gemma on vLLM + Caddy HTTPS | Backend |
 | `docs/protocol.md` | **The JSON contract.** Read this first | Everyone |
+| `docs/SETUP.md` | **Step-by-step setup** for the laptop, AMD server, Jetson and ESP32 | Everyone |
+
+**New here? Follow [docs/SETUP.md](docs/SETUP.md).** It walks through every device in order.
 
 ## Run it locally
 
