@@ -1,15 +1,15 @@
 # jetsonyay
 ### Git Workflow for the Repo
 
-Please **do not push directly to `main`**. `main` is protected and changes need to go through a PR.
+Please **do not push directly to `1.0`**. `1.0` is protected and changes need to go through a PR.
 
 For each assignment/change:
 
 **1. Make sure you're up to date**
 
 ```bash
-git checkout main
-git pull origin main
+git checkout 1.0
+git pull origin 1.0
 ```
 
 **2. Create a new branch**
@@ -41,15 +41,15 @@ git push -u origin your-name/assignment-name
 ```
 
 **6. Open a Pull Request**
-On GitHub, create a PR from your branch → `main`.
+On GitHub, create a PR from your branch → `1.0`.
 
-I'll review the PR and merge it into `main`.
+I'll review the PR and merge it into `1.0`.
 
-**7. After the PR is merged, update your local `main`**
+**7. After the PR is merged, update your local `1.0`**
 
 ```bash
-git checkout main
-git pull origin main
+git checkout 1.0
+git pull origin 1.0
 ```
 
 Then create a new branch for your next change.
