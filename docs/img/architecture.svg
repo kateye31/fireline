@@ -1,0 +1,136 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 760" width="1600" height="760" font-family="Inter, Segoe UI, system-ui, sans-serif">
+  <defs>
+    <linearGradient id="ember" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffb347"/><stop offset=".5" stop-color="#ff7a2f"/><stop offset="1" stop-color="#ff3d2e"/>
+    </linearGradient>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#8a939e"/>
+    </marker>
+    <marker id="arrE" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#ff7a2f"/>
+    </marker>
+    <style>
+      .zone { fill: #111418; stroke: rgba(255,255,255,.10); stroke-width: 1.5; }
+      .box { fill: #181c22; stroke: rgba(255,255,255,.14); stroke-width: 1.5; }
+      .hot { fill: #1f1512; stroke: rgba(255,122,47,.55); stroke-width: 1.5; }
+      .zt { fill: #8a939e; font-size: 15px; font-weight: 700; letter-spacing: .12em; }
+      .zs { fill: #5b636d; font-size: 14px; }
+      .t { fill: #eef1f4; font-size: 19px; font-weight: 600; }
+      .s { fill: #8a939e; font-size: 14px; }
+      .m { fill: #8a939e; font-size: 13px; font-family: JetBrains Mono, Consolas, monospace; }
+      .ln { stroke: #8a939e; stroke-width: 1.6; fill: none; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="760" fill="#0a0c0f"/>
+
+  <!-- title -->
+  <g transform="translate(48,44)">
+    <path transform="scale(1.4)" d="M12 2.5c.8 3.4 4.6 5.4 4.6 10a4.6 4.6 0 0 1-9.2 0c0-1.9.9-3.3 1.9-4.2 0 1.8.9 2.8 1.9 2.8 0-2.8-.9-5.4.8-8.6z" fill="url(#ember)"/>
+    <text x="46" y="27" fill="#eef1f4" font-size="26" font-weight="700">Fireline architecture</text>
+    <text x="330" y="27" class="s" font-size="16">Only one packet of 340 bytes or less ever leaves the forest.</text>
+  </g>
+
+  <!-- ===== field unit ===== -->
+  <rect x="40" y="110" width="560" height="600" rx="18" class="zone"/>
+  <text x="70" y="148" class="zt">FIELD UNIT</text>
+  <text x="70" y="170" class="zs">strapped to a tree · no grid · no internet</text>
+
+  <rect x="70" y="200" width="220" height="110" rx="12" class="box"/>
+  <text x="90" y="238" class="t">DHT11</text>
+  <text x="90" y="262" class="s">temperature + humidity</text>
+  <text x="90" y="284" class="s">averaged over 3 readings</text>
+
+  <rect x="350" y="200" width="220" height="150" rx="12" class="box"/>
+  <text x="370" y="238" class="t">ESP32 sentry</text>
+  <text x="370" y="262" class="s">always on, low power</text>
+  <text x="370" y="284" class="s">sets fire-risk tier</text>
+  <text x="370" y="306" class="s">sends heartbeats</text>
+  <text x="370" y="328" class="s">drives LED + buzzer</text>
+  <path d="M290 255 H344" class="ln" marker-end="url(#arr)"/>
+
+  <rect x="70" y="420" width="500" height="250" rx="12" class="hot"/>
+  <text x="90" y="458" class="t">NVIDIA Jetson Orin Nano</text>
+  <text x="90" y="482" class="s">idle until the weather says fire is likely</text>
+  <g transform="translate(90,505)">
+    <rect width="220" height="68" rx="9" class="box"/>
+    <text x="14" y="28" fill="#eef1f4" font-size="16" font-weight="600">Pyronear YOLO</text>
+    <text x="14" y="50" class="s">TensorRT on the GPU</text>
+  </g>
+  <g transform="translate(330,505)">
+    <rect width="220" height="68" rx="9" class="box"/>
+    <text x="14" y="28" fill="#eef1f4" font-size="16" font-weight="600">4-of-6 frame check</text>
+    <text x="14" y="50" class="s">filters cloud, fog, dust</text>
+  </g>
+  <g transform="translate(90,588)">
+    <rect width="460" height="62" rx="9" class="box"/>
+    <text x="14" y="27" fill="#eef1f4" font-size="16" font-weight="600">Interest score → event packet</text>
+    <text x="14" y="48" class="m">confidence × frames/6 × fire-weather weight</text>
+  </g>
+  <path d="M310 539 H324" class="ln" marker-end="url(#arr)"/>
+
+  <!-- MQTT between ESP32 and Jetson -->
+  <path d="M460 350 V414" class="ln" marker-end="url(#arr)"/>
+  <path d="M500 414 V356" class="ln" marker-end="url(#arr)"/>
+  <text x="514" y="390" class="m">MQTT</text>
+  <text x="340" y="378" class="m">"scan"</text>
+  <text x="514" y="408" class="m">state</text>
+
+  <!-- camera -->
+  <rect x="70" y="350" width="150" height="46" rx="10" class="box"/>
+  <text x="90" y="379" fill="#eef1f4" font-size="16" font-weight="600">Camera</text>
+  <path d="M145 396 V414" class="ln" marker-end="url(#arr)"/>
+
+  <!-- ===== uplink ===== -->
+  <text x="725" y="460" text-anchor="middle" class="zt" fill="#ff7a2f">SATELLITE UPLINK</text>
+  <text x="725" y="486" text-anchor="middle" class="s">simulated · 340 B max</text>
+  <text x="725" y="508" text-anchor="middle" class="s">5–20 s delay · retries in order</text>
+  <path d="M572 545 H872" stroke="url(#ember)" stroke-width="3" fill="none" marker-end="url(#arrE)"/>
+  <rect x="633" y="566" width="184" height="66" rx="10" class="box"/>
+  <text x="725" y="594" text-anchor="middle" class="m" fill="#eef1f4">{"typ":"evt",</text>
+  <text x="725" y="616" text-anchor="middle" class="m" fill="#eef1f4">"int":0.82,"fr":5…}</text>
+
+  <!-- ===== server ===== -->
+  <rect x="880" y="110" width="420" height="600" rx="18" class="zone"/>
+  <text x="910" y="148" class="zt">AZURE VM</text>
+  <text x="910" y="170" class="zs">Docker Compose · Caddy HTTPS</text>
+
+  <rect x="910" y="200" width="360" height="300" rx="12" class="box"/>
+  <text x="930" y="238" class="t">FastAPI ground station</text>
+  <text x="930" y="270" class="s">satellite simulator: size limit, delay, drops</text>
+  <text x="930" y="296" class="s">heartbeats, events, link log (SQLite)</text>
+  <text x="930" y="322" class="s">incidents: interest ≥ 0.5, grouped by 10 min</text>
+  <text x="930" y="348" class="s">offline after 2 missed heartbeats</text>
+  <text x="930" y="374" class="s">plain-language summary from a template</text>
+  <text x="930" y="400" class="s">serves the React site</text>
+  <text x="930" y="440" class="m">POST /api/uplink</text>
+  <text x="930" y="464" class="m">WS   /ws</text>
+
+  <rect x="910" y="540" width="360" height="130" rx="12" class="box"/>
+  <text x="930" y="578" class="t">Gemma 3 on Ollama</text>
+  <text x="930" y="604" class="s">rewrites each incident for the crew</text>
+  <text x="930" y="628" class="s">second opinion on the smoke crop</text>
+  <path d="M1070 500 V534" class="ln" marker-end="url(#arr)"/>
+  <path d="M1110 534 V506" class="ln" marker-end="url(#arr)"/>
+
+  <!-- ===== console ===== -->
+  <rect x="1380" y="110" width="180" height="600" rx="18" class="zone"/>
+  <text x="1410" y="148" class="zt">CONSOLE</text>
+  <text x="1410" y="170" class="zs">any browser</text>
+  <g class="s">
+    <rect x="1400" y="200" width="140" height="80" rx="10" class="box"/>
+    <text x="1416" y="236" fill="#eef1f4" font-size="16" font-weight="600">Fleet map</text>
+    <text x="1416" y="260">live markers</text>
+    <rect x="1400" y="300" width="140" height="80" rx="10" class="box"/>
+    <text x="1416" y="336" fill="#eef1f4" font-size="16" font-weight="600">Alerts</text>
+    <text x="1416" y="360">sound + notify</text>
+    <rect x="1400" y="400" width="140" height="80" rx="10" class="box"/>
+    <text x="1416" y="436" fill="#eef1f4" font-size="16" font-weight="600">Unit detail</text>
+    <text x="1416" y="460">weather charts</text>
+    <rect x="1400" y="500" width="140" height="80" rx="10" class="box"/>
+    <text x="1416" y="536" fill="#eef1f4" font-size="16" font-weight="600">Link log</text>
+    <text x="1416" y="560">bytes + delay</text>
+  </g>
+  <path d="M1270 340 H1394" class="ln" marker-end="url(#arr)"/>
+  <text x="1290" y="330" class="m">WebSocket</text>
+</svg>

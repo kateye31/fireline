@@ -67,6 +67,9 @@ export function useFleet() {
           case "settings":
             setSettings(m.data);
             break;
+          case "reset":
+            reload().catch(console.error);
+            break;
         }
         listeners.current.forEach((fn) => fn(m));
       };

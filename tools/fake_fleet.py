@@ -4,6 +4,8 @@
     python tools/fake_fleet.py fleet --interval 10        # faster heartbeats for the demo
     python tools/fake_fleet.py event --unit gw-14         # one smoke event (opens an incident)
     python tools/fake_fleet.py event --unit gw-03 --snapshot smoke.jpg --real
+    python tools/fake_fleet.py reset                      # before every rehearsal and judging slot
+    python tools/fake_fleet.py reset --lat 29.21 --lon -81.80 --loc tree-01   # and put gw-01 back
 
 Every simulated packet carries "sim":1 so the web app labels those units as simulated.
 """
@@ -106,6 +108,13 @@ def run_event(args) -> None:
     print(f"{args.unit} evt {len(body)} B -> {code} {resp}")
 
 
+def run_reset(args) -> None:
+    # Clears incidents, events, snapshots and the link log; units and weather history stay.
+    body = {"unit": args.unit, "lat": args.lat, "lon": args.lon, "loc": args.loc}
+    code, resp = post(args.url, "/api/demo/reset", pack(body))
+    print(f"reset -> {code} {resp}")
+
+
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--url", default="http://localhost:8000", help="Fireline server base URL")
@@ -130,6 +139,13 @@ def main() -> None:
     e.add_argument("--snapshot", help="path to a JPEG crop to upload first")
     e.add_argument("--real", action="store_true", help="do not mark the unit as simulated")
     e.set_defaults(func=run_event)
+
+    r = sub.add_parser("reset", help="clean slate before a rehearsal or judging slot")
+    r.add_argument("--unit", default="gw-01", help="real unit to put back on its first tree")
+    r.add_argument("--lat", type=float, default=None)
+    r.add_argument("--lon", type=float, default=None)
+    r.add_argument("--loc", default=None, help="tree name, e.g. tree-01")
+    r.set_defaults(func=run_reset)
 
     args = p.parse_args()
     args.func(args)

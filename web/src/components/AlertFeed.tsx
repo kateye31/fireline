@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { api, Incident, Settings, Unit } from "../api";
 import { ago, num, RISK_LABEL } from "../format";
+import { Pines } from "./Icons";
 
 type Filter = "open" | "all";
 
@@ -23,7 +24,10 @@ export default function AlertFeed({
   return (
     <div className="feed">
       <div className="feed-head">
-        <h2>Alerts</h2>
+        <div>
+          <h2>Alerts</h2>
+          <p>Confirmed smoke detections, newest first.</p>
+        </div>
         <div className="seg">
           <button className={filter === "open" ? "on" : ""} onClick={() => setFilter("open")}>
             Open
@@ -33,7 +37,13 @@ export default function AlertFeed({
           </button>
         </div>
       </div>
-      {list.length === 0 && <p className="empty">No {filter === "open" ? "open " : ""}incidents. Quiet forest.</p>}
+      {list.length === 0 && (
+        <div className="empty-state">
+          <Pines />
+          <b>Quiet forest</b>
+          No {filter === "open" ? "open " : ""}incidents. Every unit is watching.
+        </div>
+      )}
       {list.map((i) => (
         <IncidentCard key={i.id} inc={i} unit={units[i.unit_id]} gemma={settings?.gemma_model ?? null} onShowUnit={onShowUnit} />
       ))}
@@ -77,18 +87,27 @@ function IncidentCard({
           <span className="muted right">{ago(inc.opened_at)}</span>
         </header>
         <div className="metrics">
-          <span>
-            Interest <b>{num(inc.peak_interest, 2)}</b>
-          </span>
-          <span>
-            Frames <b>{inc.fr ?? "–"}/6</b>
-          </span>
-          <span>
-            Conf <b>{num(inc.conf, 2)}</b>
-          </span>
-          <span>
-            {inc.risk ? RISK_LABEL[inc.risk] : "–"} · {num(inc.temp, 0, " °C")} · {num(inc.rh, 0, " %")}
-          </span>
+          <div>
+            <small>Interest</small>
+            <b>{num(inc.peak_interest, 2)}</b>
+            <div className="meter">
+              <i style={{ width: `${Math.min(100, (inc.peak_interest ?? 0) * 100)}%` }} />
+            </div>
+          </div>
+          <div>
+            <small>Frames</small>
+            <b>{inc.fr ?? "–"}/6</b>
+          </div>
+          <div>
+            <small>Confidence</small>
+            <b>{num(inc.conf, 2)}</b>
+          </div>
+          <div>
+            <small>{inc.risk ? `${RISK_LABEL[inc.risk]} risk` : "Weather"}</small>
+            <b>
+              {num(inc.temp, 0, "°")} · {num(inc.rh, 0, "%")}
+            </b>
+          </div>
         </div>
         {inc.ai_summary ? (
           <p className="summary ai">
@@ -104,7 +123,7 @@ function IncidentCard({
         <footer>
           <button onClick={() => onShowUnit(inc.unit_id)}>Show on map</button>
           {inc.status === "new" && (
-            <button disabled={busy} onClick={() => run(() => api.ack(inc.id))}>
+            <button className="primary" disabled={busy} onClick={() => run(() => api.ack(inc.id))}>
               Acknowledge
             </button>
           )}

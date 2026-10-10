@@ -232,6 +232,27 @@ async def delete_unit(uid: str):
     return {"ok": True}
 
 
+class DemoReset(BaseModel):
+    # Optionally put the real unit back on its first tree.
+    unit: str | None = None
+    lat: float | None = None
+    lon: float | None = None
+    loc: str | None = None
+
+
+@app.post("/api/demo/reset")
+async def reset_demo(r: DemoReset | None = None):
+    """Clean slate before a rehearsal or judging slot: no incidents, events, snapshots or link log.
+    Units and their weather history stay so the map and charts are full from the first second."""
+    for table in ("incidents", "events", "snapshots", "packets"):
+        db.execute(f"DELETE FROM {table}")
+    db.execute("UPDATE units SET st='sleep' WHERE st='alert'")
+    if r and r.unit and r.lat is not None and r.lon is not None:
+        db.execute("UPDATE units SET lat=?, lon=?, loc=COALESCE(?, loc) WHERE id=?", (r.lat, r.lon, r.loc, r.unit))
+    await hub.broadcast("reset", {})
+    return {"ok": True}
+
+
 class LinkSettings(BaseModel):
     max_bytes: int | None = None
     delay_min: float | None = None
