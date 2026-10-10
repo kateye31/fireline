@@ -1,0 +1,59 @@
+# Full stack for one AMD Developer Cloud GPU droplet (MI300X, ROCm):
+#   caddy    -> HTTPS on 443, proxies to fireline
+#   fireline -> web app + API + simulated satellite link (port 8000 inside)
+#   gemma    -> vLLM serving Gemma with an OpenAI-compatible API (port 8001 inside)
+#
+#   cd deploy && cp ../.env.example .env   # fill in HF_TOKEN and SITE_ADDRESS
+#   docker compose up -d --build
+services:
+  fireline:
+    build: ..
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      GEMMA_BASE_URL: http://gemma:8001/v1
+    volumes:
+      - fireline-data:/data
+    depends_on:
+      - gemma
+
+  gemma:
+    # ROCm build of vLLM. Pin an exact tag from https://hub.docker.com/r/rocm/vllm/tags before the demo.
+    image: rocm/vllm:latest
+    restart: unless-stopped
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    group_add:
+      - video
+    ipc: host
+    shm_size: 16g
+    security_opt:
+      - seccomp=unconfined
+    environment:
+      HF_TOKEN: ${HF_TOKEN}   # Gemma is gated: accept the license on Hugging Face first
+    volumes:
+      - hf-cache:/root/.cache/huggingface
+    command: >
+      vllm serve ${GEMMA_MODEL:-google/gemma-3-27b-it}
+      --host 0.0.0.0 --port 8001
+      --max-model-len 8192
+
+  caddy:
+    image: caddy:2.8.4
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    depends_on:
+      - fireline
+
+volumes:
+  fireline-data:
+  hf-cache:
+  caddy-data:

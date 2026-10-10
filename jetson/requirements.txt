@@ -1,0 +1,4 @@
+# On the Jetson, prefer Ultralytics' Jetson Docker image (PyTorch + TensorRT preinstalled)
+# and only `pip install paho-mqtt` inside it. Time-box a bare-metal PyTorch install to 2 hours.
+ultralytics
+paho-mqtt>=2.0
