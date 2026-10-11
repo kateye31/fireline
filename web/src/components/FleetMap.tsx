@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
 import { LayersControl, MapContainer, Marker, TileLayer, Tooltip, useMap } from "react-leaflet";
 import { Unit } from "../api";
@@ -21,6 +21,49 @@ function icon(u: Unit, selected: boolean) {
     iconSize: [18, 18],
     iconAnchor: [9, 9],
   });
+}
+
+/** A marker that eases to its new spot when a unit is relocated (NFC tap), instead of jumping. */
+function GlideMarker({
+  lat,
+  lon,
+  icon,
+  zIndexOffset,
+  onClick,
+  children,
+}: {
+  lat: number;
+  lon: number;
+  icon: L.DivIcon;
+  zIndexOffset: number;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  const [pos, setPos] = useState<[number, number]>([lat, lon]);
+  const from = useRef(pos);
+  from.current = pos;
+
+  useEffect(() => {
+    const [la0, lo0] = from.current;
+    if (la0 === lat && lo0 === lon) return;
+    const start = performance.now();
+    const ms = 1400;
+    let raf = 0;
+    const step = (now: number) => {
+      const k = Math.min(1, (now - start) / ms);
+      const e = 1 - Math.pow(1 - k, 3); // ease-out cubic
+      setPos([la0 + (lat - la0) * e, lo0 + (lon - lo0) * e]);
+      if (k < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [lat, lon]);
+
+  return (
+    <Marker position={pos} icon={icon} zIndexOffset={zIndexOffset} eventHandlers={{ click: onClick }}>
+      {children}
+    </Marker>
+  );
 }
 
 function FlyTo({ focus }: { focus: Focus | null }) {
@@ -86,12 +129,13 @@ export default function FleetMap({
       <FitOnce units={placed} />
       <FlyTo focus={focus} />
       {placed.map((u) => (
-        <Marker
+        <GlideMarker
           key={u.id}
-          position={[u.lat!, u.lon!]}
+          lat={u.lat!}
+          lon={u.lon!}
           icon={icon(u, u.id === selected)}
           zIndexOffset={u.status === "alert" ? 1000 : 0}
-          eventHandlers={{ click: () => onSelect(u.id) }}
+          onClick={() => onSelect(u.id)}
         >
           <Tooltip direction="top" offset={[0, -10]}>
             <b>{u.name && u.name !== u.id ? `${u.id} · ${u.name}` : u.id}</b>
@@ -101,7 +145,7 @@ export default function FleetMap({
             {u.temp !== null && ` · ${u.temp.toFixed(1)} °C`}
             {u.rh !== null && ` · ${u.rh.toFixed(0)} %`}
           </Tooltip>
-        </Marker>
+        </GlideMarker>
       ))}
     </MapContainer>
   );

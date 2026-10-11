@@ -39,6 +39,8 @@ export default function Chart({
   const x = (t: number) => pad.l + ((t - t0) / (t1 - t0)) * (W - pad.l - pad.r);
   const y = (v: number) => pad.t + (1 - (v - lo) / (hi - lo)) * (H - pad.t - pad.b);
   const d = points.map((p, i) => `${i ? "L" : "M"}${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`).join("");
+  const area = `${d}L${x(last.t).toFixed(1)},${H - pad.b}L${x(t0).toFixed(1)},${H - pad.b}Z`;
+  const gid = `fill-${label.replace(/\W/g, "")}`;
   const minutes = Math.round((t1 - t0) / 60);
 
   return (
@@ -65,7 +67,15 @@ export default function Chart({
             </text>
           </g>
         ))}
-        <path d={d} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" />
+        <defs>
+          <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor={color} stopOpacity={0.28} />
+            <stop offset="1" stopColor={color} stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <path d={area} fill={`url(#${gid})`} />
+        <path d={d} fill="none" stroke={color} strokeWidth={1.75} strokeLinejoin="round" strokeLinecap="round" />
+        <circle cx={x(last.t)} cy={y(last.v)} r={6} fill={color} opacity={0.2} />
         <circle cx={x(last.t)} cy={y(last.v)} r={3} fill={color} />
         <text x={pad.l} y={H - 2} className="axis">
           {minutes > 0 ? `${minutes} min` : "now"}

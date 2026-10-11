@@ -6,6 +6,8 @@ import UnitList from "./components/UnitList";
 import UnitDetail from "./components/UnitDetail";
 import AlertFeed from "./components/AlertFeed";
 import SettingsPage from "./components/SettingsPage";
+import { Legend, FleetStrip } from "./components/MapOverlays";
+import { Flame, Logo } from "./components/Icons";
 
 type Tab = "map" | "alerts" | "settings";
 
@@ -84,7 +86,7 @@ export default function App() {
     <div className="app">
       <header className="top">
         <div className="brand">
-          <span className="logo">▲</span> Fireline
+          <Logo /> Fireline <small>console</small>
         </div>
         <nav>
           <button className={tab === "map" ? "on" : ""} onClick={() => setTab("map")}>
@@ -100,7 +102,7 @@ export default function App() {
         <div className="top-right">
           {lastPacket && (
             <span className={`uplink pkt-${lastPacket.status}`} title="Most recent satellite uplink">
-              ↑ {lastPacket.unit_id ?? "?"} {lastPacket.bytes} B
+              <span className="arrow">↑</span> {lastPacket.unit_id ?? "?"} <b>{lastPacket.bytes} B</b>
               {lastPacket.delay !== null ? ` · ${lastPacket.delay.toFixed(1)} s` : " · in flight"}
             </span>
           )}
@@ -109,20 +111,32 @@ export default function App() {
               Enable alert sound
             </button>
           )}
-          <span className={`live ${fleet.connected ? "on" : ""}`}>{fleet.connected ? "Live" : "Reconnecting"}</span>
+          <span className={`live ${fleet.connected ? "on" : ""}`}>
+            <i />
+            {fleet.connected ? "Live" : "Reconnecting"}
+          </span>
         </div>
       </header>
 
       {toast && (
         <div className="toast" role="alert" onClick={() => setTab("alerts")}>
-          <b>🔥 Smoke detected by {toast.unit_id}</b>
-          <span>{toast.summary}</span>
+          <div className="toast-icon">
+            <Flame size={18} color="#1a0a02" />
+          </div>
+          <div>
+            <b>Smoke detected by {toast.unit_id}</b>
+            <span>{toast.summary}</span>
+          </div>
         </div>
       )}
 
       <main className={`main main-${tab}`}>
         <section className="map-wrap" hidden={tab !== "map"}>
-          <FleetMap units={units} selected={selected} focus={focus} visible={tab === "map"} onSelect={showUnit} />
+          <div className="map-area">
+            <FleetMap units={units} selected={selected} focus={focus} visible={tab === "map"} onSelect={showUnit} />
+            <FleetStrip units={units} openCount={openCount} />
+            <Legend />
+          </div>
           <aside className="panel">
             {selectedUnit ? (
               <UnitDetail unit={selectedUnit} fleet={fleet} onBack={() => setSelected(null)} />

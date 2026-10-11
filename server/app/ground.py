@@ -125,7 +125,9 @@ async def deliver(pkt: Packet, packet_id: int, accepted_at: float, nbytes: int) 
     )
     status = "duplicate" if dup else "delivered"
     db.execute("UPDATE packets SET status=?, delivered_at=?, delay=? WHERE id=?", (status, now, delay, packet_id))
-    await hub.broadcast("packet", get_packet(packet_id))
+    row = get_packet(packet_id)
+    if row:  # gone if a demo reset cleared the link log while this packet was in flight
+        await hub.broadcast("packet", row)
     if dup:
         return
 

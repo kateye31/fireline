@@ -37,6 +37,10 @@ export default function SettingsPage({ settings, packets }: { settings: Settings
 
   return (
     <div className="settings">
+      <div className="settings-head">
+        <h2>Settings</h2>
+        <p>Satellite link simulation, demo pacing and unit placement.</p>
+      </div>
       <section>
         <h2>Demo mode</h2>
         <p className="muted">Shortens the satellite delay to 1–4 s so the whole chain plays out at the judging table.</p>
@@ -44,6 +48,21 @@ export default function SettingsPage({ settings, packets }: { settings: Settings
           <input type="checkbox" checked={draft.demo_mode} onChange={(e) => save({ demo_mode: e.target.checked })} />
           <span>{draft.demo_mode ? "On" : "Off"}</span>
         </label>
+        <p className="muted">
+          Before every rehearsal and judging slot, reset the demo: it clears incidents, events, snapshots and the link
+          log, and keeps units and their weather history.
+        </p>
+        <button
+          onClick={() => {
+            if (confirm("Clear all incidents, events, snapshots and the link log?"))
+              api.resetDemo().then(
+                () => setMsg("Demo reset. Clean slate."),
+                (e) => setMsg(String(e)),
+              );
+          }}
+        >
+          Reset demo
+        </button>
       </section>
 
       <section>
@@ -67,6 +86,7 @@ export default function SettingsPage({ settings, packets }: { settings: Settings
           </label>
         </div>
         <button
+          className="primary"
           onClick={() =>
             save({ max_bytes: draft.max_bytes, delay_min: draft.delay_min, delay_max: draft.delay_max, drop_rate: draft.drop_rate })
           }
@@ -99,7 +119,7 @@ export default function SettingsPage({ settings, packets }: { settings: Settings
             Longitude
             <input name="lon" type="number" step="any" required placeholder="-81.78" />
           </label>
-          <button type="submit">Add unit</button>
+          <button type="submit" className="primary">Add unit</button>
         </form>
       </section>
 

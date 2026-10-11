@@ -23,7 +23,7 @@ export default function UnitList({ units, onSelect }: { units: Unit[]; onSelect:
       <ul className="unit-list">
         {sorted.map((u) => (
           <li key={u.id}>
-            <button className="unit-row" onClick={() => onSelect(u.id)}>
+            <button className={`unit-row row-${u.status}`} onClick={() => onSelect(u.id)}>
               <span className={`dot dot-${u.status}`} />
               <span className="unit-id">
                 {u.id}

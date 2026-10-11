@@ -132,6 +132,7 @@ export const api = {
   addUnit: (u: { id: string; name?: string; lat: number; lon: number }) =>
     req<Unit>("/api/units", { method: "POST", body: JSON.stringify(u) }),
   deleteUnit: (id: string) => req<{ ok: boolean }>(`/api/units/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  resetDemo: () => req<{ ok: boolean }>("/api/demo/reset", { method: "POST" }),
   snapshotUrl: (id: number) => `/api/snapshots/${id}`,
 };
 
@@ -142,4 +143,5 @@ export type LiveMessage =
   | { type: "event"; data: FireEvent }
   | { type: "packet"; data: LinkPacket }
   | { type: "heartbeat"; data: Heartbeat & { unit_id: string } }
-  | { type: "settings"; data: Settings };
+  | { type: "settings"; data: Settings }
+  | { type: "reset"; data: Record<string, never> };

@@ -1,8 +1,15 @@
-import { useEffect, useState } from "react";
+import { CSSProperties, useEffect, useState } from "react";
 import { api, Unit, UnitDetail as Detail } from "../api";
 import { Fleet } from "../useFleet";
 import { ago, clock, num, RISK_LABEL, STATUS_LABEL } from "../format";
 import Chart from "./Chart";
+
+const RISK_TONE: Record<string, string> = {
+  low: "var(--c-sleep)",
+  elev: "var(--c-scan)",
+  crit: "var(--c-critical)",
+  none: "var(--c-offline)",
+};
 
 export default function UnitDetail({ unit, fleet, onBack }: { unit: Unit; fleet: Fleet; onBack: () => void }) {
   const [detail, setDetail] = useState<Detail | null>(null);
@@ -48,19 +55,19 @@ export default function UnitDetail({ unit, fleet, onBack }: { unit: Unit; fleet:
       </div>
 
       <div className="stats">
-        <div>
+        <div className="stat tone" style={{ "--tone": `var(--c-${unit.status})` } as CSSProperties}>
           <small>State</small>
-          {STATUS_LABEL[unit.status]}
+          <b>{STATUS_LABEL[unit.status]}</b>
         </div>
-        <div>
+        <div className="stat tone" style={{ "--tone": RISK_TONE[unit.risk ?? "none"] } as CSSProperties}>
           <small>Fire risk</small>
-          {unit.risk ? RISK_LABEL[unit.risk] : "–"}
+          <b>{unit.risk ? RISK_LABEL[unit.risk] : "–"}</b>
         </div>
-        <div>
+        <div className="stat">
           <small>Battery</small>
-          {num(unit.bat, 0, "%")}
+          <span className="num">{num(unit.bat, 0, "%")}</span>
         </div>
-        <div>
+        <div className="stat">
           <small>Last heard</small>
           {ago(unit.last_seen)}
         </div>
