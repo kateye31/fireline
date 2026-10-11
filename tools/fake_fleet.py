@@ -117,7 +117,7 @@ def run_reset(args) -> None:
 
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--url", default="http://localhost:8000", help="Fireline server base URL")
+    p.add_argument("--url", default="https://fire-line.tech", help="Fireline server base URL")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     f = sub.add_parser("fleet", help="post heartbeats for simulated units forever")
