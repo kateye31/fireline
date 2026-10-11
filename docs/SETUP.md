@@ -213,6 +213,29 @@ The first command makes gw-03 appear on the cloud map tagged **REAL**. The secon
 
 **Fallback if TensorRT export fails:** use `MODEL=yolov8s.pt` (slower but works), or export ONNX on a laptop.
 
+### 4d. Make it start by itself on every boot
+
+Two one-time scripts turn the Jetson into a plug-in-and-go unit:
+
+```bash
+cd ~/jetsonyay/jetson
+sudo bash hotspot_only.sh "Your Hotspot Name" "hotspot-password"
+bash install_service.sh
+```
+
+- `hotspot_only.sh` makes the Jetson join **only** your phone hotspot. It connects at boot before anyone logs in
+  and keeps retrying if the hotspot is off. Every other saved Wi-Fi network stays saved but never auto-connects.
+  Run it from the Jetson's own keyboard if you can, because the Wi-Fi reconnects and an SSH session may drop.
+- `install_service.sh` builds the `fireline-unit` image (Ultralytics + MQTT client) and installs a boot service.
+  The service waits for the camera, starts `scan.py`, and restarts it if it ever crashes.
+- Settings (server URL, unit ID, location, model) are in `/etc/fireline-unit.env`. After editing, run
+  `sudo systemctl restart fireline-unit`.
+
+Stop any container you started by hand first (`sudo docker rm -f fireline`); two copies would fight over the camera.
+
+✅ **Check:** `sudo reboot`, wait about a minute without touching anything, and gw-03 turns live on the map.
+Logs: `journalctl -u fireline-unit -f`.
+
 ## Step 5: the ESP32 (30 min)
 
 ### 5a. Wire it

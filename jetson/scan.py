@@ -137,6 +137,10 @@ def main() -> None:
     log.info("loading %s", MODEL)
     model = YOLO(MODEL, task="detect")  # loaded once and kept warm; the Jetson idles between scans
     cam = cv2.VideoCapture(CAMERA)
+    if not cam.isOpened():
+        # Exit so the systemd service restarts us once the camera shows up.
+        log.error("camera %s did not open", CAMERA)
+        raise SystemExit(1)
     cam.set(cv2.CAP_PROP_BUFFERSIZE, 1)
     set_state("sleep")
     log.info("unit %s ready, uplink %s, demo=%s", UNIT_ID, SERVER, DEMO)

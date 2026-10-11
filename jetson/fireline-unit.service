@@ -1,0 +1,19 @@
+# Runs the field unit on every boot. Installed by install_service.sh (__REPO__ is filled in there).
+[Unit]
+Description=Fireline field unit (smoke detection + uplink)
+Requires=docker.service
+After=docker.service mosquitto.service network-online.target
+Wants=network-online.target mosquitto.service
+
+[Service]
+Restart=always
+RestartSec=5
+# The USB camera can appear a few seconds after boot.
+ExecStartPre=/bin/sh -c 'until [ -e /dev/video0 ]; do sleep 1; done'
+ExecStartPre=-/usr/bin/docker rm -f fireline-unit
+ExecStart=/usr/bin/docker run --rm --name fireline-unit --runtime=nvidia --ipc=host --network host \
+    --device /dev/video0 --env-file /etc/fireline-unit.env -v __REPO__:/work fireline-unit
+ExecStop=/usr/bin/docker stop fireline-unit
+
+[Install]
+WantedBy=multi-user.target

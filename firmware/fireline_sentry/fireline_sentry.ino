@@ -26,8 +26,8 @@
 #include <DHT.h>
 
 // ======================= settings: edit these =======================
-const char* WIFI_SSID = "YOUR_HOTSPOT_NAME";   // 2.4 GHz only. iPhone: turn on "Maximize Compatibility"
-const char* WIFI_PASS = "YOUR_HOTSPOT_PASSWORD";
+const char* WIFI_SSID = "iPhone";   // 2.4 GHz only. iPhone: turn on "Maximize Compatibility"
+const char* WIFI_PASS = "qqqqqqqq";
 const char* JETSON_HOST = "gw-jetson";          // the Jetson's hostname, without ".local"
 IPAddress JETSON_FALLBACK_IP(172, 20, 10, 2);   // used only if mDNS fails; read it off the hotspot's device list
 const bool DEMO_MODE = true;                    // shortens every interval so the demo plays out in a minute
