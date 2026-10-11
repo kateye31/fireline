@@ -4,6 +4,8 @@
 
 Tree-mounted camera units that spot wildfire smoke on the device, in forests with no power grid, no internet and nobody watching, and send a single alert packet of 340 bytes or less over a satellite link.
 
+**🌐 Website: [fire-line.tech](https://fire-line.tech/)**
+
 <p>
   <img src="https://img.shields.io/badge/NVIDIA_Jetson-76B900?style=for-the-badge&logo=nvidia&logoColor=white" alt="NVIDIA Jetson">
   <img src="https://img.shields.io/badge/TensorRT-76B900?style=for-the-badge&logo=nvidia&logoColor=white" alt="TensorRT">
